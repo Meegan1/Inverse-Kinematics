@@ -26,8 +26,8 @@ public:
     void zoom(float amount);
     glm::mat4 getView();
     glm::mat4 view;
+	glm::vec3 position;
 protected:
-    glm::vec3 position;
     float yaw, pitch;
 
     void updateViewMatrix();

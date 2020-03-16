@@ -12,6 +12,9 @@
     <Filter Include="Source Files\Animation">
       <UniqueIdentifier>{32f1f045-51b6-4fc1-b9de-635d677c063d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\GUI">
+      <UniqueIdentifier>{bf36953f-98dd-4bb7-b432-49dcc086ebfd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -40,8 +43,16 @@
     <ClInclude Include="Rendering\Camera.h">
       <Filter>Source Files\Rendering</Filter>
     </ClInclude>
+    <ClInclude Include="Video.h">
+      <Filter>Source Files\Rendering</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="AnimationTree.h">
+      <Filter>Source Files\GUI</Filter>
+    </QtMoc>
   </ItemGroup>
 </Project>

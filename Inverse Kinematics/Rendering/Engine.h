@@ -17,13 +17,21 @@
 #include "qdebug.h"
 #include "Input.h"
 #include "../Animation/BVH.h"
+#include "GL/freeglut.h"
+#include <glm/mat4x2.hpp>
+
+
 
 // physics fixed timestep
 #define DELTA_TIME 0.01f
 
 class Engine : public QOpenGLWidget, protected QOpenGLFunctions {
 public:
+	BVH bvh;
+
     explicit Engine(QWidget *parent);
+
+	void selectJoint(BVH::Joint* joint);
 
 protected:
     /*
@@ -62,7 +70,12 @@ protected:
     Input input;
     QPoint last_m_pos;
     float frame = 0;
-    BVH bvh;
+	int prev_frame = -1;
+	glm::vec2 window_size;
+	GLubyte* pixels;
+	glm::mat4 target_position;
+	BVH::Joint* selected_joint;
+	
 private:
 
 };

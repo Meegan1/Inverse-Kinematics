@@ -4,8 +4,19 @@
 
 #include "Engine.h"
 #include "../Animation/BVH.h"
+#include "../Video.h"
 
 Engine::Engine(QWidget *parent) : QOpenGLWidget(parent), camera({0, 4, 10}), bvh("walking.bvh") {
+}
+
+void Engine::selectJoint(BVH::Joint* joint)
+{
+	selected_joint = joint;
+
+	// int i = selected_joint->channels[0]->index + bvh.num_channel * 0;
+	// bvh.motion[i] += 10;
+
+	target_position = bvh.getPosition(joint, 0, 1.0f);
 }
 
 void Engine::initializeGL() {
@@ -48,23 +59,27 @@ void Engine::loop() {
 
     // catch remainder in accumulator and integrate
     if(delta_accumulator >= 0.0f) {
-
         delta_accumulator = 0.0f;
     }
 
 
-    frame += frame_time / bvh.interval;
+    frame = 0;
     if(frame >= bvh.num_frame)
         frame = 0;
 
+	// if ((int) frame != prev_frame) {
+	// 	prev_frame = frame;
+	// 	Video::create_ppm("tmp", frame, window_size.x, window_size.y, 255, 4, pixels);
+	// }
+
     if(input.keyboard.KEY_W)
-        camera.zoom(frame_time);
+        camera.zoom(frame_time * 5);
     if(input.keyboard.KEY_S)
-        camera.zoom(-frame_time);
+        camera.zoom(-frame_time * 5);
     if(input.keyboard.KEY_A)
-        camera.pan(frame_time, 0);
+        camera.pan(frame_time * 5, 0);
     if(input.keyboard.KEY_D)
-        camera.pan(-frame_time, 0);
+        camera.pan(-frame_time * 5, 0);
 
 
     // call window/opengl to update
@@ -81,6 +96,10 @@ void Engine::resizeGL(int w, int h) {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     glFrustum(-aspectRatio, aspectRatio, -1.0, 1.0, 1, 100.0);
+
+	window_size = { w, h };
+
+	pixels = static_cast<GLubyte*>(malloc(4 * window_size.x * window_size.y));
 }
 
 void Engine::paintGL() {
@@ -99,11 +118,21 @@ void Engine::paintGL() {
      * Draw objects
      */
 
-    bvh.RenderFigure(frame, 0.5f);
+    bvh.RenderFigure(frame, 1.0f);
 
+	glPushMatrix();
+		glPushAttrib(GL_CURRENT_BIT);
+			glColor3f(1, 0, 0);
+			glMultMatrixf(&target_position[0][0]);
+			gluSphere(gluNewQuadric(), 0.3, 10, 10);
+		glPopAttrib();
+	glPopMatrix();
 
     GLfloat lightPos[] = {0, 30.0f, -10.0f, 0};
     glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+
+
+	glReadPixels(0, 0, window_size.x, window_size.y, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 }
 
 void Engine::keyPressEvent(QKeyEvent *event) {
@@ -139,6 +168,24 @@ void Engine::mouseMoveEvent(QMouseEvent *event) {
 
         camera.rotate(xoffset, yoffset);
     }
+	
+	if (event->buttons() & Qt::RightButton)
+	{
+		float xoffset = event->x() - last_m_pos.x();
+		float yoffset = event->y() - last_m_pos.y();
+
+		xoffset *= sensitivity;
+		yoffset *= sensitivity;
+		//
+		// target_position += camera.right() * xoffset;
+		// target_position -= camera.up() * yoffset;
+		
+		// int i = bvh.GetJoint("LowerBack")->channels[0]->index + bvh.num_channel * 0;
+		// bvh.motion[i] += xoffset;
+		//
+		// int l = bvh.GetJoint("LowerBack")->channels[1]->index + bvh.num_channel * 0;
+		// bvh.motion[l] += yoffset;
+	}
 
     last_m_pos = event->pos(); // store last mouse position
 }

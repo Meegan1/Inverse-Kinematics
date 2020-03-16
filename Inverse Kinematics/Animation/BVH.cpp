@@ -3,6 +3,9 @@
 #include <string>
 
 #include "BVH.h"
+#include <glm/vec3.hpp>
+#include <glm/vec4.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 
 BVH::BVH() {
@@ -398,6 +401,37 @@ void BVH::RenderBone(float x0, float y0, float z0, float x1, float y1, float z1,
     gluCylinder(quad_obj, radius, radius, bone_length, slices, stack);
 
     glPopMatrix();
+}
+
+
+glm::mat4 BVH::getPosition(const Joint* joint, int frame_no, float scale)
+{
+	glm::mat4 position(1);
+
+
+
+	if (joint->parent == NULL) {
+		position = glm::translate(position, glm::vec3(GetMotion(frame_no, 0) * scale, GetMotion(frame_no, 1) * scale, GetMotion(frame_no, 2) * scale));
+	}
+	else
+		position = glm::translate(position, glm::vec3(joint->offset[0] * scale, joint->offset[1] * scale, joint->offset[2] * scale));
+
+	int i;
+	for (i = 0; i < joint->channels.size(); i++) {
+		Channel* channel = joint->channels[i];
+		if (channel->type == X_ROTATION)
+			position = glm::rotate(position, -(float) GetMotion(frame_no, channel->index), glm::vec3(1.0f, 0.0f, 0.0f));
+		else if (channel->type == Y_ROTATION)
+			position = glm::rotate(position, -(float) GetMotion(frame_no, channel->index), glm::vec3(0.0f, 1.0f, 0.0f));
+		else if (channel->type == Z_ROTATION)
+			position = glm::rotate(position, -(float) GetMotion(frame_no, channel->index), glm::vec3(0.0f, 0.0f, 1.0f));
+	}
+	
+	if (joint->parent != nullptr) {
+		position *= getPosition(joint->parent, frame_no, scale);
+	}
+	
+	return position;
 }
 
 

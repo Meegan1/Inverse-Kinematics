@@ -1,4 +1,6 @@
 #pragma warning(disable: 4018)
+#include <glm/vec3.hpp>
+#include <glm/mat4x2.hpp>
 #ifndef  _BVH_H_
 #define  _BVH_H_
 
@@ -141,6 +143,8 @@ public:
 
 
     static void RenderBone(float x0, float y0, float z0, float x1, float y1, float z1, float bRadius = 0.1);
+	
+	glm::mat4 getPosition(const Joint* root, int frame_no, float scale = 1.0f);
 };
 
 

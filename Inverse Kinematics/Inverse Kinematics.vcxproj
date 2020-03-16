@@ -17,10 +17,12 @@
     <ClCompile Include="Rendering\Engine.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="AnimationTree.h" />
     <ClInclude Include="Animation\BVH.h" />
     <ClInclude Include="Rendering\Camera.h" />
     <ClInclude Include="Rendering\Engine.h" />
     <ClInclude Include="Rendering\Input.h" />
+    <ClInclude Include="Video.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
