@@ -63,7 +63,7 @@ void Engine::loop() {
     }
 
 
-    frame = 0;
+	frame += frame_time / bvh.interval;
     if(frame >= bvh.num_frame)
         frame = 0;
 
@@ -176,15 +176,9 @@ void Engine::mouseMoveEvent(QMouseEvent *event) {
 
 		xoffset *= sensitivity;
 		yoffset *= sensitivity;
-		//
-		// target_position += camera.right() * xoffset;
-		// target_position -= camera.up() * yoffset;
 		
-		// int i = bvh.GetJoint("LowerBack")->channels[0]->index + bvh.num_channel * 0;
-		// bvh.motion[i] += xoffset;
-		//
-		// int l = bvh.GetJoint("LowerBack")->channels[1]->index + bvh.num_channel * 0;
-		// bvh.motion[l] += yoffset;
+		target_position = glm::translate(target_position, camera.right() * xoffset);
+		target_position = glm::translate(target_position, -camera.up() * yoffset);
 	}
 
     last_m_pos = event->pos(); // store last mouse position
