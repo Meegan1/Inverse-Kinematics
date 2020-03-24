@@ -7,6 +7,7 @@
 #include "../Video.h"
 
 Engine::Engine(QWidget *parent) : QOpenGLWidget(parent), camera({0, 4, 10}), bvh("../rest.bvh") {
+    setWindowTitle("Animation Viewer");
 }
 
 void Engine::selectJoint(BVH::Joint* joint)

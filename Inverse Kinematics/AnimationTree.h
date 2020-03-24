@@ -12,6 +12,8 @@ class AnimationTree : public QTreeWidget
 public:
 	AnimationTree(QWidget *parent, Engine *engine) : QTreeWidget(parent), engine(engine)
 	{
+	    setWindowTitle("Joint Selection");
+
 		setColumnCount(1);
 		QList<QTreeWidgetItem*> items;
 		BVH::Joint *joint = engine->bvh.joints[0];
@@ -28,6 +30,11 @@ public:
 		// set default to root joint
 		setCurrentItem(item);
 		itemPressed(item, 0);
+
+		// set title of menu items
+        if(QTreeWidgetItem* header = headerItem()) {
+            header->setText(0, "Joints:");
+        }
 	}
 
 	void addChildren(BVH::Joint *joint, QTreeWidgetItem *item)
