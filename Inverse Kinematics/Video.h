@@ -1,6 +1,11 @@
 #pragma once
 #include <cstdio>
+
+#ifdef __APPLE__
+#include <gl.h>
+#else
 #include <GL/gl.h>
+#endif
 
 
 

@@ -24,6 +24,10 @@ public:
 		insertTopLevelItem(0, item);
 
 		connect(this, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(itemPressed(QTreeWidgetItem*, int)));
+
+		// set default to root joint
+		setCurrentItem(item);
+		itemPressed(item, 0);
 	}
 
 	void addChildren(BVH::Joint *joint, QTreeWidgetItem *item)

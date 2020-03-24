@@ -6,7 +6,7 @@
 #include "../Animation/BVH.h"
 #include "../Video.h"
 
-Engine::Engine(QWidget *parent) : QOpenGLWidget(parent), camera({0, 4, 10}), bvh("walking.bvh") {
+Engine::Engine(QWidget *parent) : QOpenGLWidget(parent), camera({0, 4, 10}), bvh("../rest.bvh") {
 }
 
 void Engine::selectJoint(BVH::Joint* joint)
