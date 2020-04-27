@@ -17,6 +17,7 @@ struct Keyboard {
     bool KEY_A = false;
     bool KEY_S = false;
     bool KEY_D = false;
+    bool KEY_SPACE = false;
 };
 
 struct Input {

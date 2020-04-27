@@ -33,6 +33,8 @@ public:
 
 	void selectJoint(BVH::Joint* joint);
 
+	Eigen::Vector3f getTargetPosition();
+
 protected:
     /*
      * OpenGL Methods

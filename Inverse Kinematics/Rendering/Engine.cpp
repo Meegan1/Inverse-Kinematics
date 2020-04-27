@@ -18,6 +18,8 @@ void Engine::selectJoint(BVH::Joint* joint)
 	// bvh.motion[i] += 10;
 
 	target_position = bvh.getPosition(joint, 0, 1.0f);
+	target_position[0] = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
+	target_position[1] = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
 }
 
 void Engine::initializeGL() {
@@ -73,6 +75,10 @@ void Engine::loop() {
 	// 	Video::create_ppm("tmp", frame, window_size.x, window_size.y, 255, 4, pixels);
 	// }
 
+    bvh.calculateJacobianIK(getTargetPosition(), selected_joint, 0, Eigen::Vector3f(0.0f, 0.0f, 1.0f));
+    bvh.calculateJacobianIK(getTargetPosition(), selected_joint, 0, Eigen::Vector3f(0.0f, 1.0f, 0.0f));
+    bvh.calculateJacobianIK(getTargetPosition(), selected_joint, 0, Eigen::Vector3f(1.0f, 0.0f, 0.0f));
+
     if(input.keyboard.KEY_W)
         camera.zoom(frame_time * 5);
     if(input.keyboard.KEY_S)
@@ -81,7 +87,6 @@ void Engine::loop() {
         camera.pan(frame_time * 5, 0);
     if(input.keyboard.KEY_D)
         camera.pan(-frame_time * 5, 0);
-
 
     // call window/opengl to update
     update();
@@ -145,6 +150,8 @@ void Engine::keyPressEvent(QKeyEvent *event) {
         input.keyboard.KEY_S = true;
     else if(event->key() == Qt::Key_D)
         input.keyboard.KEY_D = true;
+    else if(event->key() == Qt::Key_Space)
+        input.keyboard.KEY_SPACE = true;
 }
 
 void Engine::keyReleaseEvent(QKeyEvent *event) {
@@ -156,6 +163,8 @@ void Engine::keyReleaseEvent(QKeyEvent *event) {
         input.keyboard.KEY_S = false;
     else if(event->key() == Qt::Key_D)
         input.keyboard.KEY_D = false;
+    else if(event->key() == Qt::Key_Space)
+        input.keyboard.KEY_SPACE = false;
 }
 
 void Engine::mouseMoveEvent(QMouseEvent *event) {
@@ -187,4 +196,9 @@ void Engine::mouseMoveEvent(QMouseEvent *event) {
 
 void Engine::mousePressEvent(QMouseEvent *event) {
     last_m_pos = event->pos(); // clear mouse position upon click
+}
+
+Eigen::Vector3f Engine::getTargetPosition() {
+    glm::vec3 position = target_position * glm::vec4(0, 0, 0, 1.0f);
+    return {position.x, position.y, position.z};
 }

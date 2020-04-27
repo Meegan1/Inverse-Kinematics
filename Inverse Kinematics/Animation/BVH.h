@@ -8,6 +8,8 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <Eigen/Eigen>
+#include <iostream>
 
 
 using namespace std;
@@ -145,6 +147,78 @@ public:
     static void RenderBone(float x0, float y0, float z0, float x1, float y1, float z1, float bRadius = 0.1);
 	
 	glm::mat4 getPosition(const Joint* root, int frame_no, float scale = 1.0f);
+
+	Eigen::Vector3f getVectorPosition(const Joint* root, int frame_no, float scale = 1.0f) {
+        glm::vec3 position = getPosition(root, frame_no, 1.0f) * glm::vec4(0, 0, 0, 1.0f);
+        return {position.x, position.y, position.z};
+	}
+
+    void addRotation(Joint *joint, int frame_no, const Eigen::Vector3f &value) {
+        for (auto channel : joint->channels) {
+            if (channel->type == X_ROTATION)
+                SetMotion(frame_no, channel->index, GetMotion(frame_no, channel->index) + value.x());
+            else if (channel->type == Y_ROTATION)
+                SetMotion(frame_no, channel->index, GetMotion(frame_no, channel->index) + value.y());
+            else if (channel->type == Z_ROTATION)
+                SetMotion(frame_no, channel->index, GetMotion(frame_no, channel->index) + value.z());
+        }
+    }
+
+	void calculateJacobianIK(const Eigen::Vector3f &targetPosition, Joint* end_effector, int frame_no, const Eigen::Vector3f &axis) {
+	    if(end_effector->parent == nullptr)
+	        return;
+
+	    if(abs((getVectorPosition(end_effector, frame_no, 1.0f) - targetPosition).norm()) > 0.1f) {
+            Eigen::VectorXf d0 = getDeltaOrientation(targetPosition, end_effector, frame_no, axis) * 0.1f;
+
+            std::vector<Joint*> joints;
+            Joint* current_joint = end_effector->parent;
+            while(current_joint->parent != nullptr) {
+                joints.emplace_back(current_joint);
+                // climb to parent
+                current_joint = current_joint->parent;
+            }
+
+            int i = 0;
+            for(auto &joint : joints) {
+                addRotation(joint, frame_no, axis * d0[i]);
+                joint = joint->parent;
+                i++;
+            }
+	    }
+	}
+
+	Eigen::VectorXf getDeltaOrientation(const Eigen::Vector3f &targetPosition, Joint* end_effector, int frame_no, const Eigen::Vector3f &axis) {
+	    Eigen::MatrixX3f Jt = calculateJacobian(end_effector, frame_no, axis);
+	    Eigen::Vector3f V = targetPosition - getVectorPosition(end_effector, frame_no, 1.0f);
+	    Eigen::VectorXf d0;
+	    d0.resize(Jt.cols());
+	    return d0 = Jt * V;
+	}
+
+    Eigen::MatrixX3f calculateJacobian(Joint* end_effector, int frame_no, const Eigen::Vector3f &axis) {
+        Eigen::Matrix3Xf matrix;
+
+        Eigen::Vector3f E = getVectorPosition(end_effector, frame_no, 1.0f);
+
+        std::vector<Joint*> joints;
+        Joint* current_joint = end_effector->parent;
+        while(current_joint->parent != nullptr) {
+            joints.emplace_back(current_joint);
+            // climb to parent
+            current_joint = current_joint->parent;
+        }
+
+        for(auto &joint : joints) {
+            Eigen::Vector3f A = getVectorPosition(joint, frame_no, 1.0f);
+            Eigen::Vector3f J_A = axis.cross(E - A);
+
+            matrix.conservativeResize(matrix.rows(), matrix.cols() + 1);
+            matrix.col(matrix.cols() - 1) = J_A;
+        }
+
+        return matrix.transpose();
+    }
 };
 
 
