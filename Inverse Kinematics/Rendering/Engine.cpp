@@ -6,7 +6,7 @@
 #include "../Animation/BVH.h"
 #include "../Video.h"
 
-Engine::Engine(QWidget *parent) : QOpenGLWidget(parent), camera({0, 4, 10}), bvh("../rest.bvh") {
+Engine::Engine(QWidget *parent) : QOpenGLWidget(parent), camera({0, 4, 10}), bvh("../arms_up_test.bvh") {
     setWindowTitle("Animation Viewer");
 }
 
@@ -14,12 +14,7 @@ void Engine::selectJoint(BVH::Joint* joint)
 {
 	selected_joint = joint;
 
-	// int i = selected_joint->channels[0]->index + bvh.num_channel * 0;
-	// bvh.motion[i] += 10;
-
-	target_position = bvh.getPosition(joint, 0, 1.0f);
-	target_position[0] = glm::vec4(1.0f, 0.0f, 0.0f, 0.0f);
-	target_position[1] = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+	target_position = bvh.getPosition(joint, frame, 1.0f);
 }
 
 void Engine::initializeGL() {
@@ -55,29 +50,22 @@ void Engine::loop() {
 
     camera.update();
 
-    // integrate in steps
-    while (delta_accumulator >= DELTA_TIME) {
-        delta_accumulator -= DELTA_TIME;
+    if(is_playing) {
+        frame += frame_time / bvh.interval;
+        if(frame >= bvh.num_frame)
+            frame = 0;
+
+        target_position = bvh.getPosition(selected_joint, frame, 1.0f);
     }
-
-    // catch remainder in accumulator and integrate
-    if(delta_accumulator >= 0.0f) {
-        delta_accumulator = 0.0f;
-    }
-
-
-	frame += frame_time / bvh.interval;
-    if(frame >= bvh.num_frame)
-        frame = 0;
 
 	// if ((int) frame != prev_frame) {
 	// 	prev_frame = frame;
 	// 	Video::create_ppm("tmp", frame, window_size.x, window_size.y, 255, 4, pixels);
 	// }
 
-    bvh.calculateJacobianIK(getTargetPosition(), selected_joint, 0, Eigen::Vector3f(0.0f, 0.0f, 1.0f));
-    bvh.calculateJacobianIK(getTargetPosition(), selected_joint, 0, Eigen::Vector3f(0.0f, 1.0f, 0.0f));
-    bvh.calculateJacobianIK(getTargetPosition(), selected_joint, 0, Eigen::Vector3f(1.0f, 0.0f, 0.0f));
+	if(is_editing) {
+	    bvh.executeIK(getTargetPosition(), selected_joint, frame);
+    }
 
     if(input.keyboard.KEY_W)
         camera.zoom(frame_time * 5);
@@ -128,8 +116,12 @@ void Engine::paintGL() {
 
 	glPushMatrix();
 		glPushAttrib(GL_CURRENT_BIT);
-			glColor3f(1, 0, 0);
+		    if(is_editing)
+			    glColor3f(1, 0, 0);
+            else
+                glColor3f(0, 0, 1);
 			glMultMatrixf(&target_position[0][0]);
+//			glTranslatef(getTargetPosition().x(), getTargetPosition().y(), getTargetPosition().z());
 			gluSphere(gluNewQuadric(), 0.3, 10, 10);
 		glPopAttrib();
 	glPopMatrix();
@@ -186,9 +178,10 @@ void Engine::mouseMoveEvent(QMouseEvent *event) {
 
 		xoffset *= sensitivity;
 		yoffset *= sensitivity;
-		
-		target_position = glm::translate(target_position, camera.right() * xoffset);
-		target_position = glm::translate(target_position, -camera.up() * yoffset);
+
+		glm::mat4 inverse = glm::inverse(target_position);
+		target_position = glm::translate(target_position, glm::vec3(inverse * glm::vec4(camera.right(), 0.0f)) * xoffset);
+		target_position = glm::translate(target_position, glm::vec3(inverse * glm::vec4(-camera.up(), 0.0f)) * yoffset);
 	}
 
     last_m_pos = event->pos(); // store last mouse position
@@ -201,4 +194,30 @@ void Engine::mousePressEvent(QMouseEvent *event) {
 Eigen::Vector3f Engine::getTargetPosition() {
     glm::vec3 position = target_position * glm::vec4(0, 0, 0, 1.0f);
     return {position.x, position.y, position.z};
+}
+
+void Engine::togglePlay() {
+    this->is_playing = !this->is_playing;
+
+    if(isEditing() && isPlaying())
+        toggleEdit();
+
+    emit playChanged(isPlaying());
+}
+
+bool Engine::isPlaying() {
+    return this->is_playing;
+}
+
+void Engine::toggleEdit() {
+    this->is_editing = !this->is_editing;
+
+    if(isEditing() && isPlaying())
+        togglePlay();
+
+    emit editChanged(isEditing());
+}
+
+bool Engine::isEditing() {
+    return this->is_editing;
 }

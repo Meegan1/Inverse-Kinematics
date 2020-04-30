@@ -248,6 +248,81 @@ void BVH::Load(const char *bvh_file_name) {
     file.close();
 }
 
+void BVH::Save(const char *bvh_file_name) {
+    ofstream file(bvh_file_name, std::ofstream::out | std::ofstream::trunc);
+
+    file << "HIERARCHY" << std::endl;
+
+    file << "ROOT " << joints[0]->name << std::endl;
+    file << "{" << std::endl;
+    file << "\tOFFSET " << std::to_string(joints[0]->offset[0]) << " " << std::to_string(joints[0]->offset[1]) << " "
+         << std::to_string(joints[0]->offset[2]) << std::endl;
+    file << "\tCHANNELS " << joints[0]->channels.size();
+    for(auto &channel : joints[0]->channels) {
+        file << " " << PrintChannelName(channel->type);
+    }
+    file << std::endl;
+    file << PrintJoints(joints[0]->children, 2);
+    file << "}" << std::endl;
+
+    file << "MOTION" << std::endl;
+    file << "Frames: " << num_frame << std::endl;
+    file << "Frame Time: " << std::to_string(interval) << std::endl;
+
+    for(unsigned long i = 0; i < num_frame; i++) {
+        for(unsigned long j = 0; j < num_channel; j++)
+            file << std::to_string(motion[i * num_channel + j]) << " ";
+
+        file << std::endl;
+    }
+    file.close();
+}
+
+
+const std::string BVH::PrintJoint(Joint * joint, int depth) {
+    std::string tab = PrintDepth(depth);
+    std::string tab_1 = PrintDepth(depth - 1);
+    std::stringstream string;
+    string << tab_1 <<"JOINT " << joint->name << std::endl;
+    string << tab_1 << "{" << std::endl;
+    string << tab << "OFFSET " << std::to_string(joint->offset[0]) << " " << std::to_string(joint->offset[1]) << " "
+           << std::to_string(joint->offset[2]) << std::endl;
+    string << tab << "CHANNELS " << joint->channels.size();
+    for(auto &channel : joint->channels) {
+        string << " " << PrintChannelName(channel->type);
+    }
+    string << std::endl;
+    if(!joint->has_site)
+        string << PrintJoints(joint->children, depth + 1);
+    else {
+        string << tab << "End Site" << std::endl;
+        string << tab << "{" << std::endl;
+        string << tab << "\t OFFSET " << std::to_string(joint->site[0]) << " " << std::to_string(joint->site[1]) << " "
+               << std::to_string(joint->site[2]) << std::endl;
+        string << tab << "}" << std::endl;
+    }
+    string << tab_1 << "}" << std::endl;
+
+    return string.str();
+}
+
+const string BVH::PrintDepth(int depth) {
+    std::stringstream string;
+    for(int i = 0; i < depth; i++)
+        string << "\t";
+
+    return string.str();
+}
+
+const std::string BVH::PrintJoints(std::vector<Joint *> joints, int depth) {
+    std::stringstream string;
+    for(auto &joint : joints) {
+        string << PrintJoint(joint, depth);
+    }
+    return string.str();
+}
+
+
 
 #include <math.h>
 #include "GL/freeglut.h"
@@ -438,6 +513,40 @@ glm::mat4 BVH::getPosition(const Joint* end_joint, int frame_no, float scale)
 	}
 	
 	return position;
+}
+
+const string BVH::PrintChannelName(BVH::ChannelEnum &type) {
+    if (type == X_ROTATION)
+        return "Xrotation";
+    else if (type == Y_ROTATION)
+        return "Yrotation";
+    else if (type == Z_ROTATION)
+        return "Zrotation";
+    else if (type == X_POSITION)
+        return "Xposition";
+    else if (type == Y_POSITION)
+        return "Yposition";
+    else if (type == Z_POSITION)
+        return "Zposition";
+}
+
+int BVH::AddFrame(const double *new_frame) {
+    // create new array with additional frame
+    auto* new_motion = new double[(num_frame + 1) * num_channel];
+
+    // copy old array to new array
+    std::memcpy(&new_motion[0], &motion[0], sizeof(motion[0]) * num_frame * num_channel);
+
+    // swap pointers
+    std::swap(motion, new_motion);
+
+    // allocate new frame
+    std::memcpy(&motion[num_frame * num_channel], new_frame, sizeof(motion[0]) * num_channel);
+
+    // update frame counter
+    num_frame++;
+
+    return num_frame; // return new frame index
 }
 
 

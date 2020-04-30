@@ -96,6 +96,14 @@ public:
 
     void Load(const char *bvh_file_name);
 
+    void Save(const char *bvh_file_name);
+
+    const string PrintJoints(std::vector<Joint *> joints, int depth = 0);
+    const string PrintJoint(Joint *joint, int depth = 0);
+    const string PrintDepth(int depth);
+
+    const string PrintChannelName(ChannelEnum &type);
+
 public:
 
 
@@ -135,6 +143,30 @@ public:
 
     void SetMotion(int f, int c, double v) { motion[f * num_channel + c] = v; }
 
+    int AddFrame(const double *new_frame);
+
+    bool isClose(BVH &other, int frame_no) {
+        for(int i = 0; i < joints.size(); i++) {
+            if(abs((getVectorPosition(joints[i], frame_no, 1.0f) - other.getVectorPosition(other.joints[i], 0)).norm()) > 0.7f)
+                return false;
+        }
+
+        return true;
+    }
+
+    void interpolateOther(BVH &other, int frame_no) {
+        auto *old_frame = new double[num_channel];
+        std::memcpy(old_frame, &motion[(frame_no) * num_channel], sizeof(motion[0]) * num_channel);
+        AddFrame(old_frame);
+
+        for(int i = 0; i < joints.size(); i++) {
+            executeIK(other.getVectorPosition(other.joints[i], 0), joints[i], frame_no);
+        }
+        std::memcpy(&motion[(frame_no + 1) * num_channel], &motion[(frame_no) * num_channel], sizeof(motion[0]) * num_channel);
+
+        std::memcpy(&motion[(frame_no) * num_channel], old_frame, sizeof(motion[0]) * num_channel);
+    }
+
 public:
 
 
@@ -164,26 +196,30 @@ public:
         }
     }
 
+    void executeIK(const Eigen::Vector3f &targetPosition, Joint* end_effector, int frame_no) {
+        calculateJacobianIK(targetPosition, end_effector, frame_no, Eigen::Vector3f(0.0f, 0.0f, 1.0f));
+        calculateJacobianIK(targetPosition, end_effector, frame_no, Eigen::Vector3f(0.0f, 1.0f, 0.0f));
+        calculateJacobianIK(targetPosition, end_effector, frame_no, Eigen::Vector3f(1.0f, 0.0f, 0.0f));
+	}
+
 	void calculateJacobianIK(const Eigen::Vector3f &targetPosition, Joint* end_effector, int frame_no, const Eigen::Vector3f &axis) {
 	    if(end_effector->parent == nullptr)
 	        return;
 
-	    if(abs((getVectorPosition(end_effector, frame_no, 1.0f) - targetPosition).norm()) > 0.1f) {
+        Eigen::Vector3f distanceVector = (getVectorPosition(end_effector, frame_no, 1.0f) - targetPosition);
+	    if(abs((distanceVector.norm())) > 0.1f) {
             Eigen::VectorXf d0 = getDeltaOrientation(targetPosition, end_effector, frame_no, axis) * 0.1f;
 
             std::vector<Joint*> joints;
             Joint* current_joint = end_effector->parent;
             while(current_joint->parent != nullptr) {
-                joints.emplace_back(current_joint);
+                joints.emplace(joints.begin(), current_joint);
                 // climb to parent
                 current_joint = current_joint->parent;
             }
 
-            int i = 0;
-            for(auto &joint : joints) {
-                addRotation(joint, frame_no, axis * d0[i]);
-                joint = joint->parent;
-                i++;
+            for(int i = 0; i < joints.size(); i++) {
+                addRotation(joints[i], frame_no, axis * (d0[i] * (pow(i, 3) / (float) pow(joints.size(), 3))));
             }
 	    }
 	}
@@ -204,7 +240,7 @@ public:
         std::vector<Joint*> joints;
         Joint* current_joint = end_effector->parent;
         while(current_joint->parent != nullptr) {
-            joints.emplace_back(current_joint);
+            joints.emplace(joints.begin(), current_joint);
             // climb to parent
             current_joint = current_joint->parent;
         }

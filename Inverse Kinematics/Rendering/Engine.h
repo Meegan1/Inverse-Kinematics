@@ -26,6 +26,7 @@
 #define DELTA_TIME 0.01f
 
 class Engine : public QOpenGLWidget, protected QOpenGLFunctions {
+Q_OBJECT
 public:
 	BVH bvh;
 
@@ -34,6 +35,15 @@ public:
 	void selectJoint(BVH::Joint* joint);
 
 	Eigen::Vector3f getTargetPosition();
+
+	void togglePlay();
+	bool isPlaying();
+	void toggleEdit();
+	bool isEditing();
+
+signals:
+    void playChanged(bool value);
+    void editChanged(bool value);
 
 protected:
     /*
@@ -71,6 +81,8 @@ protected:
     Camera camera;
     Input input;
     QPoint last_m_pos;
+    bool is_editing = false;
+    bool is_playing = true;
     float frame = 0;
 	int prev_frame = -1;
 	glm::vec2 window_size;
@@ -79,7 +91,6 @@ protected:
 	BVH::Joint* selected_joint;
 	
 private:
-
 };
 
 

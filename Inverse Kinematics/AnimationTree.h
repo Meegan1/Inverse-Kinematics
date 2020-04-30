@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QBoxLayout>
+#include <QPushButton>
 #include "QTreeWidget"
 #include "Animation/BVH.h"
 #include "Rendering/Engine.h"
@@ -12,8 +14,6 @@ class AnimationTree : public QTreeWidget
 public:
 	AnimationTree(QWidget *parent, Engine *engine) : QTreeWidget(parent), engine(engine)
 	{
-	    setWindowTitle("Joint Selection");
-
 		setColumnCount(1);
 		QList<QTreeWidgetItem*> items;
 		BVH::Joint *joint = engine->bvh.joints[0];
