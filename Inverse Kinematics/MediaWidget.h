@@ -17,18 +17,27 @@ Q_OBJECT
     QPushButton *play;
     QPushButton *edit;
     QPushButton *save;
+    QPushButton *load;
+    QSlider *slider;
 public:
     MediaWidget(QWidget *parent, Engine *engine) : QWidget(parent), engine(engine) {
         play = new QPushButton("Pause", this);
         edit = new QPushButton("Edit Joint", this);
         save = new QPushButton("Save", this);
+        load = new QPushButton("Load", this);
+        slider = new QSlider(Qt::Horizontal, this);
+        slider->setRange(0, 99);
+
 
         connect(engine, SIGNAL(playChanged(bool)), this, SLOT(updatePlayButton(bool)));
         connect(engine, SIGNAL(editChanged(bool)), this, SLOT(updateEditButton(bool)));
+        connect(engine, SIGNAL(frameChanged(int)), this, SLOT(timeChanged(int)));
 
         connect(play, SIGNAL(released()), this, SLOT(playPressed()));
         connect(edit, SIGNAL(released()), this, SLOT(editPressed()));
         connect(save, SIGNAL(released()), this, SLOT(savePressed()));
+        connect(load, SIGNAL(released()), this, SLOT(loadPressed()));
+        connect(slider, SIGNAL(valueChanged(int)), this, SLOT(valueChanged(int)));
 
         // create layout
         QBoxLayout *layout = new QVBoxLayout();
@@ -38,6 +47,8 @@ public:
         layout->addWidget(edit);
         layout->addWidget(play);
         layout->addWidget(save);
+        layout->addWidget(load);
+        layout->addWidget(slider);
     }
 
 private slots:
@@ -71,6 +82,23 @@ private slots:
             edit->setText("Edit Joint");
         else
             edit->setText("Stop Editing Joint");
+    }
+
+    void loadPressed() {
+        QFileDialog dialog(this);
+        dialog.setFileMode(QFileDialog::ExistingFile);
+        if(dialog.exec()) {
+            engine->loadBVH(dialog.selectedFiles().first().toStdString().c_str());
+        }
+    }
+
+    void timeChanged(int value) {
+        const QSignalBlocker blocker(slider); // block valueChanged from being triggered
+        slider->setValue(value);
+    }
+
+    void valueChanged(int value) {
+        this->engine->setFrame((value * this->engine->bvh.num_frame) / 100);
     }
 };
 #endif //ASSIGNMENT_1_MEDIAWIDGET_H

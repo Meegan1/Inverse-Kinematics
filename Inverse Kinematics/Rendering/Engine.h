@@ -40,10 +40,13 @@ public:
 	bool isPlaying();
 	void toggleEdit();
 	bool isEditing();
+    void loadBVH(const char* file);
+    void setFrame(int frame);
 
 signals:
     void playChanged(bool value);
     void editChanged(bool value);
+    void frameChanged(int value);
 
 protected:
     /*

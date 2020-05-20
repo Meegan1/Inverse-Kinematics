@@ -26,6 +26,7 @@ Q_OBJECT
     QListWidget *poses;
     QPushButton *add;
     QPushButton *remove;
+    QPushButton *generate;
     BVH temp_bvh;
 
 public:
@@ -42,17 +43,25 @@ public:
 
         layout->addWidget(poses);
 
-        QBoxLayout *buttons = new QHBoxLayout();
+        QBoxLayout *buttons = new QVBoxLayout();
+        QBoxLayout *add_remove_buttons = new QHBoxLayout();
+        buttons->setMargin(0);
+        add_remove_buttons->setMargin(0);
 
         add = new QPushButton("+");
         remove = new QPushButton("-");
-        buttons->addWidget(remove);
-        buttons->addWidget(add);
+        add_remove_buttons->addWidget(remove);
+        add_remove_buttons->addWidget(add);
+
+        generate = new QPushButton("Generate Animation");
 
         layout->addLayout(buttons);
+        buttons->addLayout(add_remove_buttons);
+        buttons->addWidget(generate);
 
         connect(add, SIGNAL(released()), this, SLOT(addPose()));
         connect(remove, SIGNAL(released()), this, SLOT(removePose()));
+        connect(generate, SIGNAL(released()), this, SLOT(generateAnimation()));
     }
 
 private slots:
@@ -69,15 +78,27 @@ private slots:
         qDeleteAll(poses->selectedItems());
     };
 
-    void generateInterpolation() {
-        temp_bvh = ((Pose*) poses->item(0))->bvh;
+    void generateAnimation() {
+        if(poses->count() < 2) {
 
-        BVH other = ((Pose*) poses->item(1))->bvh;
-
-        while(!temp_bvh.isClose(other, temp_bvh.num_frame - 1)) {
-            temp_bvh.interpolateOther(other, temp_bvh.num_frame - 1);
+            return;
         }
-        temp_bvh.Save("../arms_up_test.bvh");
+
+        QFileDialog dialog(this);
+        dialog.setAcceptMode(QFileDialog::AcceptSave);
+        dialog.setNameFilter(tr("*.bvh"));
+        dialog.setFileMode(QFileDialog::AnyFile);
+        if(dialog.exec()) {
+            temp_bvh = ((Pose*) poses->item(0))->bvh;
+
+            for(int i = 1; i < poses->count(); i++) {
+                BVH other = ((Pose*) poses->item(i))->bvh;
+                while(!temp_bvh.isClose(other, temp_bvh.num_frame - 1)) {
+                    temp_bvh.interpolateOther(other, temp_bvh.num_frame - 1);
+                }
+            }
+            temp_bvh.Save(dialog.selectedFiles().first().toStdString().c_str());
+        }
     }
 };
 

@@ -5,6 +5,7 @@
 #include "Engine.h"
 #include "../Animation/BVH.h"
 #include "../Video.h"
+#include <QThread>
 
 Engine::Engine(QWidget *parent) : QOpenGLWidget(parent), camera({0, 4, 10}), bvh("../arms_up_test.bvh") {
     setWindowTitle("Animation Viewer");
@@ -55,6 +56,7 @@ void Engine::loop() {
         if(frame >= bvh.num_frame)
             frame = 0;
 
+        emit frameChanged((100 * frame)/bvh.num_frame);
         target_position = bvh.getPosition(selected_joint, frame, 1.0f);
     }
 
@@ -220,4 +222,25 @@ void Engine::toggleEdit() {
 
 bool Engine::isEditing() {
     return this->is_editing;
+}
+
+void Engine::loadBVH(const char* file) {
+    // pause animation
+    this->is_playing = false;
+    this->is_playing = false;
+    emit playChanged(isPlaying());
+    emit editChanged(isEditing());
+
+    // set frame to 0
+    this->frame = 0;
+    emit frameChanged(0);
+
+    // set to new animation
+    this->bvh.Clear();
+    this->bvh.Load(file);
+    this->selected_joint = bvh.joints[0];
+}
+
+void Engine::setFrame(int frame) {
+    this->frame = frame;
 }
