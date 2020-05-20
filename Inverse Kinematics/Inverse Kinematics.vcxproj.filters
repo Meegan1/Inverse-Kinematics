@@ -34,9 +34,6 @@
     <ClInclude Include="Animation\BVH.h">
       <Filter>Source Files\Animation</Filter>
     </ClInclude>
-    <ClInclude Include="Rendering\Engine.h">
-      <Filter>Source Files\Rendering</Filter>
-    </ClInclude>
     <ClInclude Include="Rendering\Input.h">
       <Filter>Source Files\Rendering</Filter>
     </ClInclude>
@@ -52,6 +49,18 @@
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="AnimationTree.h">
+      <Filter>Source Files\GUI</Filter>
+    </QtMoc>
+    <QtMoc Include="Rendering\Engine.h">
+      <Filter>Source Files\Rendering</Filter>
+    </QtMoc>
+    <QtMoc Include="MediaWidget.h">
+      <Filter>Source Files\GUI</Filter>
+    </QtMoc>
+    <QtMoc Include="PoseWidget.h">
+      <Filter>Source Files\GUI</Filter>
+    </QtMoc>
+    <QtMoc Include="UIWindow.h">
       <Filter>Source Files\GUI</Filter>
     </QtMoc>
   </ItemGroup>

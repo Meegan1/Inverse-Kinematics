@@ -5,9 +5,11 @@
 #include "Engine.h"
 #include "../Animation/BVH.h"
 #include "../Video.h"
+#include <fstream>
 #include <QThread>
+#include <filesystem>
 
-Engine::Engine(QWidget *parent) : QOpenGLWidget(parent), camera({0, 4, 10}), bvh("../arms_up_test.bvh") {
+Engine::Engine(QWidget *parent) : QOpenGLWidget(parent), camera({0, 4, 10}), bvh("walking.bvh") {
     setWindowTitle("Animation Viewer");
 }
 
@@ -60,11 +62,6 @@ void Engine::loop() {
         target_position = bvh.getPosition(selected_joint, frame, 1.0f);
     }
 
-	// if ((int) frame != prev_frame) {
-	// 	prev_frame = frame;
-	// 	Video::create_ppm("tmp", frame, window_size.x, window_size.y, 255, 4, pixels);
-	// }
-
 	if(is_editing) {
 	    bvh.executeIK(getTargetPosition(), selected_joint, frame);
     }
@@ -80,6 +77,18 @@ void Engine::loop() {
 
     // call window/opengl to update
     update();
+
+	/*
+	 * Cap FPS
+	 */
+	if ((1000 / FPS) - elapsed_timer.elapsed() >= 0) {
+		timer.stop();
+
+		if (elapsed_timer.elapsed() < 0)
+			timer.start(0);
+		else
+			timer.start((1000 / (int)FPS) - elapsed_timer.elapsed());
+	}
 }
 
 void Engine::resizeGL(int w, int h) {
@@ -94,8 +103,6 @@ void Engine::resizeGL(int w, int h) {
     glFrustum(-aspectRatio, aspectRatio, -1.0, 1.0, 1, 100.0);
 
 	window_size = { w, h };
-
-	pixels = static_cast<GLubyte*>(malloc(4 * window_size.x * window_size.y));
 }
 
 void Engine::paintGL() {
@@ -123,7 +130,6 @@ void Engine::paintGL() {
             else
                 glColor3f(0, 0, 1);
 			glMultMatrixf(&target_position[0][0]);
-//			glTranslatef(getTargetPosition().x(), getTargetPosition().y(), getTargetPosition().z());
 			gluSphere(gluNewQuadric(), 0.3, 10, 10);
 		glPopAttrib();
 	glPopMatrix();
@@ -132,7 +138,10 @@ void Engine::paintGL() {
     glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
 
 
-	glReadPixels(0, 0, window_size.x, window_size.y, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	if (is_recording) {
+		frame_caps.push_back(static_cast<GLubyte*>(malloc(4 * window_size.x * window_size.y)));
+		glReadPixels(0, 0, window_size.x, window_size.y, GL_RGBA, GL_UNSIGNED_BYTE, frame_caps.back());
+	}
 }
 
 void Engine::keyPressEvent(QKeyEvent *event) {
@@ -211,6 +220,19 @@ bool Engine::isPlaying() {
     return this->is_playing;
 }
 
+void Engine::toggleRecord() {
+	if (this->is_recording)
+		stopRecording();
+	else
+		startRecording();
+
+	emit recordChanged(isRecording());
+}
+
+bool Engine::isRecording() {
+	return this->is_recording;
+}
+
 void Engine::toggleEdit() {
     this->is_editing = !this->is_editing;
 
@@ -243,4 +265,49 @@ void Engine::loadBVH(const char* file) {
 
 void Engine::setFrame(int frame) {
     this->frame = frame;
+}
+
+void Engine::startRecording() {
+	// clear buffer
+	for (auto* pixels : frame_caps) {
+		free(pixels);
+	}
+	frame_caps.clear(); // clear vector
+
+	is_recording = true;
+}
+
+void Engine::stopRecording() {
+	is_recording = false;
+
+	QMessageBox msgBox;
+	msgBox.setText("The frames will now be exported into the video folder!");
+	msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+	msgBox.setDefaultButton(QMessageBox::Ok);
+	int ret = msgBox.exec();
+
+	if (ret == QMessageBox::Ok)
+		outputImages();
+}
+
+void Engine::outputImages() {
+	std::filesystem::remove_all("video"); // cleanup video folder
+	std::filesystem::create_directory("video"); // create new video folder
+
+
+	int i = 0;
+	for (auto* pixels : this->frame_caps) {
+		Video::create_ppm("video/tmp", i, window_size.x, window_size.y, 255, 4, pixels);
+		i++;
+	}
+
+	// create file with ffmpeg command to render video
+	std::ofstream file("video/render.sh");
+	file << "ffmpeg -framerate " << FPS << " -i \"tmp%d.ppm\" output.mp4";
+	file.close();
+
+	// create readme
+	std::ofstream readme("video/readme.txt");
+	readme << "Compile all the images via ffmpeg using this command: ffmpeg -framerate " << FPS << " -i \"tmp%d.ppm\" output.mp4";
+	readme.close();
 }

@@ -11,7 +11,6 @@
 #include "MediaWidget.h"
 #include "PoseWidget.h"
 
-
 class UIWindow : public QWidget
 {
 	Q_OBJECT

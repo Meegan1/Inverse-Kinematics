@@ -9,12 +9,14 @@
 #include <QPushButton>
 #include <QBoxLayout>
 #include <QFileDialog>
+#include <QSlider>
 #include "Rendering/Engine.h"
 
 class MediaWidget : public QWidget {
 Q_OBJECT
     Engine *engine;
     QPushButton *play;
+	QPushButton *record;
     QPushButton *edit;
     QPushButton *save;
     QPushButton *load;
@@ -22,6 +24,7 @@ Q_OBJECT
 public:
     MediaWidget(QWidget *parent, Engine *engine) : QWidget(parent), engine(engine) {
         play = new QPushButton("Pause", this);
+		record = new QPushButton("Record", this);
         edit = new QPushButton("Edit Joint", this);
         save = new QPushButton("Save", this);
         load = new QPushButton("Load", this);
@@ -30,10 +33,12 @@ public:
 
 
         connect(engine, SIGNAL(playChanged(bool)), this, SLOT(updatePlayButton(bool)));
+		connect(engine, SIGNAL(recordChanged(bool)), this, SLOT(updateRecordButton(bool)));
         connect(engine, SIGNAL(editChanged(bool)), this, SLOT(updateEditButton(bool)));
         connect(engine, SIGNAL(frameChanged(int)), this, SLOT(timeChanged(int)));
 
         connect(play, SIGNAL(released()), this, SLOT(playPressed()));
+		connect(record, SIGNAL(released()), this, SLOT(recordPressed()));
         connect(edit, SIGNAL(released()), this, SLOT(editPressed()));
         connect(save, SIGNAL(released()), this, SLOT(savePressed()));
         connect(load, SIGNAL(released()), this, SLOT(loadPressed()));
@@ -46,6 +51,7 @@ public:
 
         layout->addWidget(edit);
         layout->addWidget(play);
+		layout->addWidget(record);
         layout->addWidget(save);
         layout->addWidget(load);
         layout->addWidget(slider);
@@ -55,6 +61,10 @@ private slots:
     void playPressed() {
         engine->togglePlay();
     }
+
+	void recordPressed() {
+		engine->toggleRecord();
+	}
 
     void editPressed() {
         engine->toggleEdit();
@@ -76,6 +86,13 @@ private slots:
         else
             play->setText("Pause");
     }
+
+	void updateRecordButton(bool isRecording) {
+		if (!isRecording)
+			record->setText("Record");
+		else
+			record->setText("Stop Recording");
+	}
 
     void updateEditButton(bool isEditing) {
         if(!isEditing)

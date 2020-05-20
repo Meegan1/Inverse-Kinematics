@@ -38,8 +38,8 @@ public:
         poses = new QListWidget(this);
         poses->setDragDropMode(QAbstractItemView::InternalMove);
 
-        poses->addItem(new Pose("../rest.bvh"));
-        poses->addItem(new Pose("../dab.bvh"));
+        poses->addItem(new Pose("rest.bvh"));
+        poses->addItem(new Pose("arms_up.bvh"));
 
         layout->addWidget(poses);
 

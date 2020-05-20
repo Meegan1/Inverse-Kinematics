@@ -53,11 +53,11 @@ void BVH::Clear() {
 void BVH::Load(const char *bvh_file_name) {
 #define  BUFFER_LENGTH  1024*4
 
-    ifstream file;
+	std::ifstream file;
     char line[BUFFER_LENGTH];
     char *token;
     char separater[] = " :,\t";
-    vector<Joint *> joint_stack;
+	std::vector<Joint *> joint_stack;
     Joint *joint = NULL;
     Joint *new_joint = NULL;
     bool is_site = false;
@@ -79,7 +79,7 @@ void BVH::Load(const char *bvh_file_name) {
         mn_last = bvh_file_name + strlen(bvh_file_name);
     motion_name.assign(mn_first, mn_last);
 
-    file.open(bvh_file_name, ios::in);
+    file.open(bvh_file_name, std::ios::in);
     if (file.is_open() == 0) return;
 
 
@@ -249,7 +249,7 @@ void BVH::Load(const char *bvh_file_name) {
 }
 
 void BVH::Save(const char *bvh_file_name) {
-    ofstream file(bvh_file_name, std::ofstream::out | std::ofstream::trunc);
+	std::ofstream file(bvh_file_name, std::ofstream::out | std::ofstream::trunc);
 
     file << "HIERARCHY" << std::endl;
 
@@ -306,7 +306,7 @@ const std::string BVH::PrintJoint(Joint * joint, int depth) {
     return string.str();
 }
 
-const string BVH::PrintDepth(int depth) {
+const std::string BVH::PrintDepth(int depth) {
     std::stringstream string;
     for(int i = 0; i < depth; i++)
         string << "\t";
@@ -483,7 +483,7 @@ void BVH::RenderBone(float x0, float y0, float z0, float x1, float y1, float z1,
 glm::mat4 BVH::getPosition(const Joint* end_joint, int frame_no, float scale)
 {
 	glm::mat4 position(1);
-	deque<Joint *> jointList;
+	std::deque<Joint *> jointList;
 	jointList.push_back(const_cast<Joint *>(end_joint));
 	
 	Joint* iterator = end_joint->parent;
@@ -515,7 +515,7 @@ glm::mat4 BVH::getPosition(const Joint* end_joint, int frame_no, float scale)
 	return position;
 }
 
-const string BVH::PrintChannelName(BVH::ChannelEnum &type) {
+const std::string BVH::PrintChannelName(BVH::ChannelEnum &type) {
     if (type == X_ROTATION)
         return "Xrotation";
     else if (type == Y_ROTATION)
